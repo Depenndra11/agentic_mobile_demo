@@ -1,0 +1,19 @@
+{
+  "automation_type": "web",
+
+  "web": {
+    "browser": "chrome",
+    "base_url": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+    "Username": "Admin",
+    "pass": "admin123"
+  },
+
+  "mobile": {
+    "appium_server": "http://127.0.0.1:4723",
+    "platform_name": "Android",
+    "device_name": "emulator-5554",
+    "automation_name": "UiAutomator2",
+    "app_package": "com.android.calculator2",
+    "app_activity": "com.android.calculator2.Calculator"
+  }
+}

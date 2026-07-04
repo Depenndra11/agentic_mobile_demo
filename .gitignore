@@ -1,0 +1,27 @@
+```gitignore
+# Virtual Environment
+venv/
+.venv/
+
+# Environment Variables
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+
+# PyCharm
+.idea/
+
+# PyTest
+.pytest_cache/
+
+# Test Reports
+reports/
+logs/
+screenshots/
+
+# Allure Reports
+allure-results/
+allure-report/
+```
