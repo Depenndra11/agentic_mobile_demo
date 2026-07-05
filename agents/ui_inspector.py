@@ -1,5 +1,8 @@
 from pathlib import Path
 
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class UIInspector:
@@ -31,21 +34,20 @@ class UIInspector:
             encoding="utf-8"
         )
 
-        print(f"\n✅ Page Source Saved\n{output}")
+        logger.info("Page source saved: %s", output)
 
         return output
 
 
-
-
-# Reuse driver from conftest
 if __name__ == "__main__":
-        from tests.conftest import get_driver
 
-        driver = get_driver()
+    # Reuse driver from conftest
+    from tests.conftest import get_driver
 
+    driver = get_driver()
+
+    try:
         inspector = UIInspector(driver)
-
         inspector.capture_page_source()
-
+    finally:
         driver.quit()
