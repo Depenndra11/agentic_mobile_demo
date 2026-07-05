@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Any, Optional, TypedDict
 
 from langgraph.graph import StateGraph, END
 
@@ -8,98 +8,119 @@ from agents.page_agent import PageAgent
 from agents.executor import Executor
 
 from tests.conftest import get_driver
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 # -------------------------------------------------
 # Workflow State
+#
+# Each node both reports whether it completed AND
+# carries forward the data the next node needs, so
+# steps aren't just side-effecting through disk I/O.
 # -------------------------------------------------
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
 
-    planner: bool
-    inspector: bool
-    locator: bool
-    page: bool
-    executor: bool
+    planner_done: bool
+    inspector_done: bool
+    page_done: bool
+    executor_done: bool
+
+    testcases: Optional[list]
+    screen_xml_path: Optional[str]
+
+    error: Optional[str]
 
 
 # -------------------------------------------------
 # Planner Node
 # -------------------------------------------------
 
-def planner_node(state):
+def planner_node(state: AgentState) -> AgentState:
 
-    print("\nPlanner Agent\n")
+    logger.info("Running Planner agent")
 
-    Planner().run()
+    testcases = Planner().run()
 
-    state["planner"] = True
+    state["planner_done"] = True
+    state["testcases"] = testcases
 
     return state
 
 
 # -------------------------------------------------
-# UI Inspector
+# UI Inspector Node
 # -------------------------------------------------
 
-def inspector_node(state):
+def inspector_node(state: AgentState) -> AgentState:
 
-    print("\nUI Inspector Agent\n")
+    logger.info("Running UI Inspector agent")
 
     driver = get_driver()
 
-    UIInspector(driver).capture_page_source()
+    try:
+        path = UIInspector(driver).capture_page_source()
+    finally:
+        driver.quit()
 
-    driver.quit()
-
-    state["inspector"] = True
-
-    return state
-
-
-# -------------------------------------------------
-# Locator Agent
-# -------------------------------------------------
-
-def locator_node(state):
-
-    print("\nLocator Agent\n")
-
-    LocatorAgent().run()
-
-    state["locator"] = True
+    state["inspector_done"] = True
+    state["screen_xml_path"] = str(path)
 
     return state
 
 
 # -------------------------------------------------
-# Page Agent
+# Page Node
 # -------------------------------------------------
 
-def page_node(state):
+def page_node(state: AgentState) -> AgentState:
 
-    print("\nPage Agent\n")
+    logger.info("Running Page agent")
 
     PageAgent().run()
 
-    state["page"] = True
+    state["page_done"] = True
 
     return state
 
 
 # -------------------------------------------------
-# Executor
+# Executor Node
 # -------------------------------------------------
 
-def executor_node(state):
+def executor_node(state: AgentState) -> AgentState:
 
-    print("\nExecutor Agent\n")
+    logger.info("Running Executor agent")
 
     Executor().run()
 
-    state["executor"] = True
+    state["executor_done"] = True
 
     return state
+
+
+# -------------------------------------------------
+# Error Handling
+#
+# If any node above raises, LangGraph propagates the
+# exception by default. Wrapping each node lets us
+# record which step failed instead of a bare traceback
+# with no indication of pipeline progress.
+# -------------------------------------------------
+
+def _guarded(node_fn, name: str):
+
+    def wrapper(state: AgentState) -> AgentState:
+        try:
+            return node_fn(state)
+        except Exception as exc:
+            logger.error("%s agent failed: %s", name, exc)
+            state["error"] = f"{name} failed: {exc}"
+            raise
+
+    return wrapper
 
 
 # -------------------------------------------------
@@ -108,24 +129,16 @@ def executor_node(state):
 
 builder = StateGraph(AgentState)
 
-builder.add_node("planner", planner_node)
-
-builder.add_node("inspector", inspector_node)
-
-
-
-builder.add_node("page", page_node)
-
-builder.add_node("executor", executor_node)
+builder.add_node("planner", _guarded(planner_node, "Planner"))
+builder.add_node("inspector", _guarded(inspector_node, "UI Inspector"))
+builder.add_node("page", _guarded(page_node, "Page"))
+builder.add_node("executor", _guarded(executor_node, "Executor"))
 
 builder.set_entry_point("planner")
 
 builder.add_edge("planner", "inspector")
-
 builder.add_edge("inspector", "page")
-
 builder.add_edge("page", "executor")
-
 builder.add_edge("executor", END)
 
 workflow = builder.compile()

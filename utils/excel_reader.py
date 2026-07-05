@@ -23,7 +23,7 @@ class ExcelReader:
 
             if execution_type:
 
-                if tc["Execution Type"].lower() != execution_type.lower():
+                if (tc.get("Execution Type") or "").lower() != execution_type.lower():
                     continue
 
             testcases.append(tc)

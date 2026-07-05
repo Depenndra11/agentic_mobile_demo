@@ -3,19 +3,21 @@ import json
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google import genai
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from config.settings import Settings
+from utils.llm import get_client, generate_content
+from utils.logger import get_logger
 
 load_dotenv()
+
+logger = get_logger(__name__)
 
 
 class Planner:
 
     def __init__(self):
-        self.client = genai.Client(api_key=Settings.GEMINI_API_KEY)
+        self.client = get_client()
 
     def load_prompt(self):
         prompt_file = (
@@ -38,26 +40,20 @@ class Planner:
 
         prompt = prompt.replace("{requirement}", requirement)
 
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config={
-                "response_mime_type": "application/json"
-            }
+        text = generate_content(
+            self.client,
+            prompt,
+            response_mime_type="application/json",
         )
 
         try:
-            print("=" * 60)
-            print("Gemini Response")
-            print("=" * 60)
-            print(response.text)
-            return json.loads(response.text)
-        except Exception:
-            print("\nGemini Response:\n")
-            print(response.text)
+            return json.loads(text)
+        except json.JSONDecodeError:
+            logger.error("Gemini returned non-JSON response:\n%s", text)
             raise
 
-    def remove_duplicates(self, testcases):
+    @staticmethod
+    def remove_duplicates(testcases):
         unique = []
         seen = set()
 
@@ -69,12 +65,14 @@ class Planner:
 
         return unique
 
-    def assign_ids(self, testcases):
+    @staticmethod
+    def assign_ids(testcases):
         for i, tc in enumerate(testcases, start=1):
             tc["id"] = f"TC{i:02d}"
         return testcases
 
-    def format_value(self, value):
+    @staticmethod
+    def format_value(value):
         if value is None:
             return ""
 
@@ -136,26 +134,30 @@ class Planner:
         output = Path(__file__).resolve().parent / "testcases.xlsx"
         wb.save(output)
 
-        print(f"\n✅ Excel Created: {output}")
+        logger.info("Excel created: %s", output)
 
     def run(self):
-        print("=" * 60)
-        print("🚀 Agentic Planner Started")
-        print("=" * 60)
-
-        print("\nGenerating AI Test Cases...\n")
+        logger.info("Planner agent started")
 
         testcases = self.generate_test_cases()
-        print(f"Generated : {len(testcases)}")
+
+        if not isinstance(testcases, list):
+            raise ValueError(
+                f"Expected a list of test cases from the LLM, got: {type(testcases)}"
+            )
+
+        logger.info("Generated %d test case(s)", len(testcases))
 
         testcases = self.remove_duplicates(testcases)
-        print(f"After Duplicate Removal : {len(testcases)}")
+        logger.info("%d test case(s) after duplicate removal", len(testcases))
 
         testcases = self.assign_ids(testcases)
 
         self.save_excel(testcases)
 
-        print("\n✅ Planner Completed Successfully")
+        logger.info("Planner agent completed")
+
+        return testcases
 
 
 if __name__ == "__main__":

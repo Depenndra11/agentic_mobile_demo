@@ -36,10 +36,10 @@ class UIInspector:
         return output
 
 
-if __name__ == "__main__":
 
-    # Reuse driver from conftest
-    if __name__ == "__main__":
+
+# Reuse driver from conftest
+if __name__ == "__main__":
         from tests.conftest import get_driver
 
         driver = get_driver()

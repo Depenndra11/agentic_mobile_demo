@@ -45,10 +45,9 @@ class FrameworkReader:
             skip_files = {
                 "__init__.py",
                 "framework_reader.py",
-                "script_generator.py",
                 "excel_reader.py",
-                "script_writer.py",
-                "script_checker.py"
+                "llm.py",
+                "logger.py",
             }
 
             for file in folder_path.rglob("*.py"):
@@ -75,12 +74,12 @@ class FrameworkReader:
 
                 framework.append(
                     f"""
-File:
-{filename}
-
-Code:
-{self.read_file(file_path)}
-"""
+                    File:
+                    {filename}
+                    
+                    Code:
+                    {self.read_file(file_path)}
+                    """
                 )
 
         return "\n\n".join(framework)

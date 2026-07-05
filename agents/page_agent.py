@@ -1,20 +1,20 @@
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google import genai
 
-from config.settings import Settings
+from utils.llm import get_client, generate_content, strip_code_fences
+from utils.logger import get_logger
 
 load_dotenv()
+
+logger = get_logger(__name__)
 
 
 class PageAgent:
 
     def __init__(self):
 
-        self.client = genai.Client(
-            api_key=Settings.GEMINI_API_KEY
-        )
+        self.client = get_client()
 
         self.project_root = Path(__file__).resolve().parent.parent
 
@@ -34,9 +34,6 @@ class PageAgent:
             encoding="utf-8"
         )
 
-
-
-
     # ---------------------------------------
     # Load Prompt
     # ---------------------------------------
@@ -54,18 +51,29 @@ class PageAgent:
         )
 
     # ---------------------------------------
-    # Generate Page Object
+    # Load Captured Screen XML
     # ---------------------------------------
+
     def load_xml(self):
         xml = (
-                self.project_root
-                / "artifacts"
-                / "screen.xml"
+            self.project_root
+            / "artifacts"
+            / "screen.xml"
         )
+
+        if not xml.exists():
+            raise FileNotFoundError(
+                f"{xml} not found — run the UI Inspector agent first."
+            )
 
         return xml.read_text(
             encoding="utf-8"
         )
+
+    # ---------------------------------------
+    # Generate Page Object
+    # ---------------------------------------
+
     def generate_page(self):
 
         prompt = self.load_prompt()
@@ -80,12 +88,9 @@ class PageAgent:
             self.load_xml()
         )
 
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
+        text = generate_content(self.client, prompt)
 
-        return response.text
+        return strip_code_fences(text)
 
     # ---------------------------------------
     # Save File
@@ -108,21 +113,19 @@ class PageAgent:
             encoding="utf-8"
         )
 
-        print(f"\n✅ Page Object Created\n{output}")
+        logger.info("Page object created: %s", output)
 
     # ---------------------------------------
 
     def run(self):
 
-        print("=" * 60)
-        print("Page Agent Started")
-        print("=" * 60)
+        logger.info("Page agent started")
 
         code = self.generate_page()
 
         self.save_page(code)
 
-        print("\n✅ Page Object Generated")
+        logger.info("Page agent completed")
 
 
 if __name__ == "__main__":

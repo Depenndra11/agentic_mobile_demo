@@ -2,21 +2,21 @@ import json
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google import genai
 
-from config.settings import Settings
+from utils.llm import get_client, generate_content, strip_code_fences
 from utils.excel_reader import ExcelReader
+from utils.logger import get_logger
 
 load_dotenv()
+
+logger = get_logger(__name__)
 
 
 class Executor:
 
     def __init__(self):
 
-        self.client = genai.Client(
-            api_key=Settings.GEMINI_API_KEY
-        )
+        self.client = get_client()
 
         self.project_root = Path(__file__).resolve().parent.parent
 
@@ -91,12 +91,9 @@ class Executor:
             json.dumps(testcase, indent=2)
         )
 
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
+        text = generate_content(self.client, prompt)
 
-        return response.text
+        return strip_code_fences(text)
 
     # -----------------------------------------
     # Save Script
@@ -104,11 +101,12 @@ class Executor:
 
     def save_script(self, testcase, code):
 
-        filename = (
-            testcase["ID"]
-            .lower()
-            .replace(" ", "_")
-        )
+        tc_id = testcase.get("ID") or testcase.get("id")
+
+        if not tc_id:
+            raise ValueError(f"Test case is missing an ID: {testcase}")
+
+        filename = tc_id.lower().replace(" ", "_")
 
         output = (
             self.project_root
@@ -125,7 +123,7 @@ class Executor:
             encoding="utf-8"
         )
 
-        print(f"✅ Created : {output.name}")
+        logger.info("Created: %s", output.name)
 
     # -----------------------------------------
 
@@ -137,19 +135,37 @@ class Executor:
             / "testcases.xlsx"
         )
 
+        if not excel.exists():
+            raise FileNotFoundError(
+                f"{excel} not found — run the Planner agent first."
+            )
+
         reader = ExcelReader(excel)
 
         testcases = reader.get_testcases()
 
-        print(f"\nGenerating {len(testcases)} scripts...\n")
+        logger.info("Generating %d script(s)", len(testcases))
+
+        failures = []
 
         for tc in testcases:
+            try:
+                code = self.generate_script(tc)
+                self.save_script(tc, code)
+            except Exception as exc:
+                logger.error(
+                    "Failed to generate script for %s: %s",
+                    tc.get("ID", "<unknown>"), exc
+                )
+                failures.append(tc.get("ID", "<unknown>"))
 
-            code = self.generate_script(tc)
-
-            self.save_script(tc, code)
-
-        print("\n✅ Script Generation Completed")
+        if failures:
+            logger.warning(
+                "Script generation finished with %d failure(s): %s",
+                len(failures), failures
+            )
+        else:
+            logger.info("Script generation completed successfully")
 
 
 if __name__ == "__main__":
