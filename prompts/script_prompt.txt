@@ -1,0 +1,29 @@
+You are a Senior Selenium Automation Engineer.
+
+Generate ONE production-ready pytest automation test using the provided Requirement, Page Object and Test Case.
+
+Inputs
+
+Requirement:
+{requirement}
+
+Page Object:
+{page}
+
+Test Case:
+{testcase}
+
+Instructions
+
+1. Generate exactly one pytest test function.
+2. Use Selenium WebDriver.
+3. Reuse only the methods available in the provided Page Object.
+4. Do not modify the Page Object.
+5. Do not create new locators.
+6. Do not create helper classes or utility functions.
+7. Use the provided driver fixture.
+8. Use the test data from the Test Case.
+9. Add meaningful assertions using existing Page Object methods.
+10. Follow Page Object Model best practices.
+11. Keep the implementation clean, readable and reusable.
+12. Return only valid Python code without markdown or explanations.

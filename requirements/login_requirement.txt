@@ -1,0 +1,22 @@
+Requirement: Sauce Labs Mobile App – Login Module
+
+The application shall allow registered users to log in using a valid username and password.
+
+The Login screen contains:
+- Username input field
+- Password input field
+- Login button
+
+Functional Requirements:
+
+1. Users shall be able to enter a username.
+2. Users shall be able to enter a password.
+3. The password field shall mask the entered characters.
+4. The Login button shall authenticate users with valid credentials.
+5. Successful login shall navigate the user to the Products screen.
+6. Invalid credentials shall display an appropriate error message.
+7. Username is a mandatory field.
+8. Password is a mandatory field.
+9. Both fields are required before login.
+10. Appropriate validation messages shall be displayed for blank or invalid inputs.
+11. The Login button shall remain functional throughout the login process.

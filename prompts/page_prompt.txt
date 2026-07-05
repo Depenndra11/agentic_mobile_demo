@@ -1,0 +1,60 @@
+You are a Senior Selenium Automation Engineer.
+
+Your task is to generate ONE complete Selenium Page Object Model (POM) class.
+
+Inputs:
+1. Functional Requirement
+2. Current Screen HTML/XML
+
+Requirement:
+{requirement}
+
+Current Screen HTML/XML:
+{xml}
+
+Rules:
+
+1. Generate exactly ONE Page Object class named LoginPage.
+
+2. Use Selenium only.
+   - Import:
+     from selenium.webdriver.common.by import By
+     from selenium.webdriver.support.ui import WebDriverWait
+     from selenium.webdriver.support import expected_conditions as EC
+
+3. Store all locators inside the LoginPage class.
+
+4. Extract locators ONLY from the provided HTML/XML.
+
+5. Do NOT create locators for elements that are not present.
+
+6. Prefer locator strategy in this order:
+   - By.ID
+   - By.NAME
+   - By.CSS_SELECTOR
+   - By.XPATH (only if no better locator exists)
+
+7. Constructor must accept a Selenium WebDriver instance.
+
+8. Generate reusable methods only, such as:
+   - enter_username()
+   - enter_password()
+   - click_login()
+   - login()
+   - is_login_page_displayed()
+
+9. Use WebDriverWait instead of time.sleep().
+
+10. Do not hardcode test data.
+
+11. Do not include assertions.
+
+12. Do not generate pytest code.
+
+13. Do not generate test cases.
+
+14. Do not generate another locator class.
+
+15. Return ONLY valid Python code.
+
+16. Do not include markdown or explanations.

@@ -1,56 +1,38 @@
-import json
-
 import pytest
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-from appium import webdriver as appium_driver
-from appium.options.android import UiAutomator2Options
+from config.settings import Settings
 
 
-with open("config/config.json", "r") as file:
-    config = json.load(file)
+def get_driver():
+    """
+    Create Chrome driver in mobile emulation mode.
+    """
+
+    options = Options()
+
+    options.add_experimental_option(
+        "mobileEmulation",
+        {
+            "deviceName": Settings.DEVICE
+        }
+    )
+
+    options.add_argument("--disable-notifications")
+
+    driver = webdriver.Chrome(options=options)
+
+    driver.get(Settings.BASE_URL)
+
+    return driver
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def driver():
 
-    if config["automation_type"].lower() == "web":
-
-        browser = config["web"]["browser"]
-
-        if browser.lower() == "chrome":
-
-            options = Options()
-
-            driver = webdriver.Chrome(options=options)
-
-        else:
-            raise Exception(f"Unsupported browser: {browser}")
-
-        driver.maximize_window()
-        driver.get(config["web"]["base_url"])
-
-    elif config["automation_type"].lower() == "mobile":
-
-        options = UiAutomator2Options()
-
-        options.platform_name = config["mobile"]["platform_name"]
-        options.device_name = config["mobile"]["device_name"]
-        options.automation_name = config["mobile"]["automation_name"]
-        options.app_package = config["mobile"]["app_package"]
-        options.app_activity = config["mobile"]["app_activity"]
-
-        driver = appium_driver.Remote(
-            config["mobile"]["appium_server"],
-            options=options
-        )
-
-    else:
-        raise Exception(
-            f"Unsupported automation type: {config['automation_type']}"
-        )
+    driver = get_driver()
 
     yield driver
 

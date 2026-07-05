@@ -1,45 +1,157 @@
-from tools.appium_tool import AppiumManager
-from utils.logger import get_logger
+import json
+from pathlib import Path
+
+from dotenv import load_dotenv
+from google import genai
+
+from config.settings import Settings
+from utils.excel_reader import ExcelReader
+
+load_dotenv()
 
 
-class ExecutorAgent:
+class Executor:
 
     def __init__(self):
-        self.driver = AppiumManager.get_driver()
-        self.logger = get_logger()
 
-    def execute(self, plan: dict):
+        self.client = genai.Client(
+            api_key=Settings.GEMINI_API_KEY
+        )
 
-        self.logger.info("Executing Test Plan...")
+        self.project_root = Path(__file__).resolve().parent.parent
 
-        for step in plan.get("test_steps", []):
+    # -----------------------------------------
+    # Load Prompt
+    # -----------------------------------------
 
-            self.logger.info(f"Executing Step: {step}")
+    def load_prompt(self):
 
-            step_lower = step.lower()
+        prompt_file = (
+            self.project_root
+            / "prompts"
+            / "script_prompt.txt"
+        )
 
-            if "launch" in step_lower:
-                self.logger.info("Application launched.")
+        return prompt_file.read_text(
+            encoding="utf-8"
+        )
 
-            elif "username" in step_lower:
-                self.logger.info("Entering username...")
-                # Example:
-                # self.driver.find_element(...).send_keys("standard_user")
+    # -----------------------------------------
+    # Requirement
+    # -----------------------------------------
 
-            elif "password" in step_lower:
-                self.logger.info("Entering password...")
-                # self.driver.find_element(...).send_keys("secret_sauce")
+    def load_requirement(self):
 
-            elif "login" in step_lower:
-                self.logger.info("Click Login button...")
-                # self.driver.find_element(...).click()
+        file = (
+            self.project_root
+            / "requirements"
+            / "login_requirement.txt"
+        )
 
-            else:
-                self.logger.warning(f"No action defined for: {step}")
+        return file.read_text(
+            encoding="utf-8"
+        )
 
-        self.logger.info("Execution Completed.")
+    # -----------------------------------------
+    # Page Object
+    # -----------------------------------------
 
-        return {
-            "status": "PASS",
-            "executed_steps": plan.get("test_steps", [])
-        }
+    def load_page(self):
+
+        page = (
+            self.project_root
+            / "pages"
+            / "login_page.py"
+        )
+
+        return page.read_text(
+            encoding="utf-8"
+        )
+
+    # -----------------------------------------
+    # Generate Script
+    # -----------------------------------------
+
+    def generate_script(self, testcase):
+
+        prompt = self.load_prompt()
+
+        prompt = prompt.replace(
+            "{requirement}",
+            self.load_requirement()
+        )
+
+        prompt = prompt.replace(
+            "{page}",
+            self.load_page()
+        )
+
+        prompt = prompt.replace(
+            "{testcase}",
+            json.dumps(testcase, indent=2)
+        )
+
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
+        return response.text
+
+    # -----------------------------------------
+    # Save Script
+    # -----------------------------------------
+
+    def save_script(self, testcase, code):
+
+        filename = (
+            testcase["ID"]
+            .lower()
+            .replace(" ", "_")
+        )
+
+        output = (
+            self.project_root
+            / "tests"
+            / f"test_{filename}.py"
+        )
+
+        output.parent.mkdir(
+            exist_ok=True
+        )
+
+        output.write_text(
+            code,
+            encoding="utf-8"
+        )
+
+        print(f"✅ Created : {output.name}")
+
+    # -----------------------------------------
+
+    def run(self):
+
+        excel = (
+            self.project_root
+            / "agents"
+            / "testcases.xlsx"
+        )
+
+        reader = ExcelReader(excel)
+
+        testcases = reader.get_testcases()
+
+        print(f"\nGenerating {len(testcases)} scripts...\n")
+
+        for tc in testcases:
+
+            code = self.generate_script(tc)
+
+            self.save_script(tc, code)
+
+        print("\n✅ Script Generation Completed")
+
+
+if __name__ == "__main__":
+
+    Executor().run()

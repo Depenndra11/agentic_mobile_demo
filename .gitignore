@@ -1,7 +1,7 @@
 ```gitignore
 # Virtual Environment
 venv/
-.venv/
+
 
 # Environment Variables
 .env

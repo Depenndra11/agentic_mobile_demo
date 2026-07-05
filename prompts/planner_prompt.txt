@@ -1,0 +1,96 @@
+You are a Senior QA Automation Engineer.
+
+Your task is to generate comprehensive Mobile UI functional test cases from the given requirement.
+
+Requirement:
+
+{requirement}
+
+Instructions:
+
+Generate ONLY functional test cases that can be automated using Selenium WebDriver.
+
+Do NOT generate automation scripts.
+
+Do NOT generate Python code.
+
+Do NOT generate Page Objects.
+
+Do NOT generate locators.
+
+Do NOT generate API, Database, SQL, Backend, Performance, Security, Accessibility or Compatibility test cases.
+
+Focus only on functional UI validation.
+
+Include test cases for:
+
+- Positive scenarios
+- Negative scenarios
+- Input validation
+- Navigation
+- Mandatory field validation
+- Button functionality
+- Label verification
+- Error message validation
+- Success message validation
+- Session behavior
+- Logout (if applicable)
+
+Return ONLY a valid JSON array.
+
+Each object must contain exactly these fields:
+
+[
+  {
+    "module": "",
+    "scenario": "",
+    "steps": "",
+    "test_data": "",
+    "expected": "",
+    "priority": "",
+    "test_type": "",
+    "execution_type": "",
+    "automation_status": ""
+  }
+]
+
+Rules:
+
+1. Do NOT generate an "id" field.
+
+2. steps must be a single string.
+
+3. expected must be a single string.
+
+4. test_data must be a single string.
+
+5. priority must be one of:
+   - High
+   - Medium
+   - Low
+
+6. test_type must be one of:
+   - Positive
+   - Negative
+
+7. execution_type must be one of:
+   - Smoke
+   - Sanity
+   - Regression
+
+8. automation_status must always be:
+   Pending
+
+9. Generate at least 10 test cases.
+
+10. Every test case must have a unique scenario.
+
+11. Return ONLY a JSON array.
+
+12. Do NOT wrap the JSON inside another object.
+
+13. Do NOT use markdown.
+
+14. Do NOT add explanations.
+
+15. The response must start with '[' and end with ']'.
